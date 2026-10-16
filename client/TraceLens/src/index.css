@@ -1,0 +1,18 @@
+/* src/index.css ya App.css mein yeh sab replace kar dein */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: #0b0f17; /* Aapki page ka dark background color */
+  overflow-x: hidden;
+}
