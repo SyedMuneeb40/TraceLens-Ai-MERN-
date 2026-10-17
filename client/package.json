@@ -3,5 +3,10 @@
   "private": true,
   "workspaces": [
     "TraceLens"
-  ]
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace TraceLens",
+    "build": "npm run build --workspace TraceLens",
+    "lint": "npm run lint --workspace TraceLens"
+  }
 }
