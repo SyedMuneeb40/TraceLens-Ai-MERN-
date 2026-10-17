@@ -154,7 +154,12 @@ const processIncidentLogs = async ({
         ...logsToStore.map((log) => log.message)
     ].join("\n");
 
-  const embedding = await generateEmbedding(embeddingText);
+  let embedding = null;
+    try {
+      embedding = await generateEmbedding(embeddingText);
+    } catch (err) {
+      console.error("Embedding failed:", err.message);
+    }
 
   const incidentData = {
     project: project._id,

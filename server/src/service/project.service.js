@@ -80,6 +80,11 @@ const getProjectById = async (user_id , project_id)=>{
     isIdValid(user_id);
     isIdValid(project_id);
 
+    console.log("Lookup:", { user_id, project_id });
+
+    const byIdOnly = await Project.findById(project_id).select("owner");
+    console.log("Project by id only:", byIdOnly);
+
     const existingProject = await Project.findOne(
         {
             owner: user_id,

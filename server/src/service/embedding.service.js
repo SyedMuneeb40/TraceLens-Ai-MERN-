@@ -1,34 +1,44 @@
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434"
 const EMBEDDING_DIMENSIONS = 768;
+const GEMINI_MODEL = "gemini-embedding-001";
+
 const generateEmbedding = async (text) => {
-    if (typeof text !== "string" || !text.trim()) {
-        throw new Error("Text is required to generate an embedding.");
+  if (typeof text !== "string" || !text.trim()) {
+    throw new Error("Text is required to generate an embedding.");
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set.");
+  }
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:embedContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": process.env.GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        model: `models/${GEMINI_MODEL}`,
+        content: { parts: [{ text }] },
+        outputDimensionality: EMBEDDING_DIMENSIONS,
+      }),
     }
+  );
 
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/embed`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            model: "nomic-embed-text",
-            input: text
-        })
-    });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Embedding generation failed (${response.status}): ${body}`);
+  }
 
-    if (!response.ok) {
-        throw new Error(`Embedding generation failed: ${response.status}`);
-    }
+  const data = await response.json();
+  const embedding = data.embedding?.values;
 
-    const data = await response.json();
-    const embedding = data.embeddings?.[0];
+  if (!Array.isArray(embedding) || embedding.length !== EMBEDDING_DIMENSIONS) {
+    throw new Error("Invalid embedding returned.");
+  }
 
-    if (!Array.isArray(embedding) || embedding.length !== EMBEDDING_DIMENSIONS) {
-        throw new Error("Ollama returned an invalid embedding.");
-    }
-
-    return embedding;
+  return embedding;
 };
 
-module.exports =  generateEmbedding ;
+module.exports = generateEmbedding;
