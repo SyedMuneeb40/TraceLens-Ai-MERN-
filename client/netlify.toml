@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = "TraceLens/dist"
+
+# React Router (BrowserRouter) needs all paths served by index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
