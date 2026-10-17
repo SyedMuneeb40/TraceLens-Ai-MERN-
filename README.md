@@ -13,7 +13,7 @@
 ![Auth](https://img.shields.io/badge/OTP%20%2B%20JWT-Sessions-FACC15?style=for-the-badge&labelColor=0b0b0b)
 ![DB](https://img.shields.io/badge/MongoDB-Atlas%20Vector%20Search-FACC15?style=for-the-badge&labelColor=0b0b0b)
 
-[**🚀 Live Demo**](https://your-app.netlify.app) · [**⚙️ API Health**](https://your-api.onrender.com/api/health) · [**🎬 Demo Video**](#) · [**🐛 Report a Bug**](../../issues)
+[**🚀 Live Demo**](https://tracelensai.netlify.app/) · [**⚙️ API Health**](https://tracelens-ai-mern.onrender.com/api/health) · [**🐛 Report a Bug**](../../issues)
 
 <br>
 
