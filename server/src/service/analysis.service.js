@@ -1,11 +1,10 @@
-
 const mongoose = require("mongoose");
 
 const Analysis = require("../models/Analysis");
 const Incident = require("../models/Incident");
 const Project = require("../models/Project");
 
-const analyzeWithOllama = require("./ollama.service");
+const analyzeWithOpenRouter = require("./ai.service");
 const searchSimilarIncidents = require("./incidentSearch.service");
 
 const analyzeIncident = async ({
@@ -75,9 +74,7 @@ const analyzeIncident = async ({
     throw error;
   }
 
-  
   const startedAt = Date.now();
-
   let relatedIncidents = [];
 
   try {
@@ -108,7 +105,6 @@ const analyzeIncident = async ({
       "Historical incident retrieval failed:",
       error.message
     );
-
     relatedIncidents = [];
   }
 
@@ -141,16 +137,19 @@ const analyzeIncident = async ({
   let aiResult;
 
   try {
-    aiResult = await analyzeWithOllama({
+    aiResult = await analyzeWithOpenRouter({
       currentEvidence,
       historicalContext
     });
   } catch (error) {
+    // Attach status code to avoid generic unhandled 500 crashes
+     console.error("AI analysis failed:", error.message);
+    error.statusCode = error.statusCode || 502;
     throw error;
+
   }
 
   const durationMs = Date.now() - startedAt;
-
 
   // 7. Validate response structure
   const isConfidenceValid = (value) =>
@@ -209,31 +208,30 @@ const analyzeIncident = async ({
   }
 
   if (
-  aiResult.missingInformation.some(
-    (item) =>
-      typeof item !== "string" || !item.trim()
-  )
-) {
-  const error = new Error(
-    "AI returned invalid missing-information entries."
-  );
-  error.statusCode = 502;
-  throw error;
-}
+    aiResult.missingInformation.some(
+      (item) => typeof item !== "string" || !item.trim()
+    )
+  ) {
+    const error = new Error(
+      "AI returned invalid missing-information entries."
+    );
+    error.statusCode = 502;
+    throw error;
+  }
 
-  // 9. Save the validated analysis
+  // 9. Save the validated analysis with OpenRouter metadata
   const analysis = await Analysis.create({
     incident: incident._id,
-    modelName: process.env.OLLAMA_MODEL || "qwen3:8b",
-    runtime: "ollama",
+    modelName: process.env.OPENROUTER_MODEL || "poolside/laguna-s-2.1:free",
+    runtime: "openrouter",
     promptVersion: "v1",
     summary: aiResult.summary.trim(),
     hypotheses: aiResult.hypotheses,
     historicalReferences: relatedIncidents.map((item) => ({
-            incident: item._id,
-            similarityScore: item.score,
-            title: item.title
-        })),
+      incident: item._id,
+      similarityScore: item.score,
+      title: item.title
+    })),
     missingInformation: aiResult.missingInformation,
     overallConfidence: aiResult.overallConfidence,
     evidenceVerified: true,
@@ -247,87 +245,85 @@ const analyzeIncident = async ({
   };
 };
 
-
 // Get all analyses for one incident
 const getIncidentAnalyses = async ({ projectId, incidentId, userId, page = 1, limit = 10 }) => {
-    if (
-        !mongoose.isValidObjectId(projectId) ||
-        !mongoose.isValidObjectId(incidentId) ||
-        !mongoose.isValidObjectId(userId)
-    ) {
-        throw Object.assign(new Error("Invalid ID"), { statusCode: 400 });
+  if (
+    !mongoose.isValidObjectId(projectId) ||
+    !mongoose.isValidObjectId(incidentId) ||
+    !mongoose.isValidObjectId(userId)
+  ) {
+    throw Object.assign(new Error("Invalid ID"), { statusCode: 400 });
+  }
+
+  const project = await Project.findOne({ _id: projectId, owner: userId });
+  if (!project) {
+    throw Object.assign(new Error("Project not found"), { statusCode: 404 });
+  }
+
+  const incident = await Incident.findOne({
+    _id: incidentId,
+    project: project._id
+  });
+
+  if (!incident) {
+    throw Object.assign(new Error("Incident not found"), { statusCode: 404 });
+  }
+
+  page = Math.max(1, Number.parseInt(page, 10) || 1);
+  limit = Math.min(50, Math.max(1, Number.parseInt(limit, 10) || 10));
+
+  const [analyses, total] = await Promise.all([
+    Analysis.find({ incident: incident._id })
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Analysis.countDocuments({ incident: incident._id })
+  ]);
+
+  return {
+    success: true,
+    analyses,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
     }
-
-    const project = await Project.findOne({ _id: projectId, owner: userId });
-    if (!project) {
-        throw Object.assign(new Error("Project not found"), { statusCode: 404 });
-    }
-
-    const incident = await Incident.findOne({
-        _id: incidentId,
-        project: project._id
-    });
-
-    if (!incident) {
-        throw Object.assign(new Error("Incident not found"), { statusCode: 404 });
-    }
-
-    page = Math.max(1, Number.parseInt(page, 10) || 1);
-    limit = Math.min(50, Math.max(1, Number.parseInt(limit, 10) || 10));
-
-    const [analyses, total] = await Promise.all([
-        Analysis.find({ incident: incident._id })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean(),
-        Analysis.countDocuments({ incident: incident._id })
-    ]);
-
-    return {
-        success: true,
-        analyses,
-        pagination: {
-            page,
-            limit,
-            total,
-            totalPages: Math.ceil(total / limit)
-        }
-    };
+  };
 };
 
 // Get one analysis by ID, checking project ownership
 const getAnalysisById = async ({ analysisId, userId }) => {
-    if (
-        !mongoose.isValidObjectId(analysisId) ||
-        !mongoose.isValidObjectId(userId)
-    ) {
-        throw Object.assign(new Error("Invalid ID"), { statusCode: 400 });
-    }
+  if (
+    !mongoose.isValidObjectId(analysisId) ||
+    !mongoose.isValidObjectId(userId)
+  ) {
+    throw Object.assign(new Error("Invalid ID"), { statusCode: 400 });
+  }
 
-    const analysis = await Analysis.findById(analysisId).lean();
+  const analysis = await Analysis.findById(analysisId).lean();
 
-    if (!analysis) {
-        throw Object.assign(new Error("Analysis not found"), { statusCode: 404 });
-    }
+  if (!analysis) {
+    throw Object.assign(new Error("Analysis not found"), { statusCode: 404 });
+  }
 
-    const incident = await Incident.findById(analysis.incident).select("project");
+  const incident = await Incident.findById(analysis.incident).select("project");
 
-    if (!incident) {
-        throw Object.assign(new Error("Incident not found"), { statusCode: 404 });
-    }
+  if (!incident) {
+    throw Object.assign(new Error("Incident not found"), { statusCode: 404 });
+  }
 
-    const project = await Project.findOne({
-        _id: incident.project,
-        owner: userId
-    }).select("_id");
+  const project = await Project.findOne({
+    _id: incident.project,
+    owner: userId
+  }).select("_id");
 
-    if (!project) {
-        throw Object.assign(new Error("Analysis not found"), { statusCode: 404 });
-    }
+  if (!project) {
+    throw Object.assign(new Error("Analysis not found"), { statusCode: 404 });
+  }
 
-    return { success: true, analysis };
+  return { success: true, analysis };
 };
 
-module.exports = {analyzeIncident,getIncidentAnalyses,getAnalysisById};
-
+module.exports = { analyzeIncident, getIncidentAnalyses, getAnalysisById };

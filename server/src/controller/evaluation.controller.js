@@ -21,6 +21,7 @@ const getEvaluationRuns = async (req, res) => {
         return res.status(200).json({
             success: true,
             data: runs,
+            latest: runs[0] || null,
             pagination: {
                 currentPage: page,
                 limit,

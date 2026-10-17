@@ -1,6 +1,6 @@
 const express = require("express");
 
-const {submitIncidentLog,getIncidents,incidentById,searchIncidents} = require("../controller/incident.controller");
+const {submitIncidentLog,getIncidents,incidentById,searchIncidents,updateIncident} = require("../controller/incident.controller");
 const {protect} = require("../middlewares/authMiddleware");
 const { default: rateLimit } = require("express-rate-limit");
 
@@ -15,18 +15,20 @@ const incidentLimit = rateLimit(
         statusCode: 429,
         message: "Too many attempts. Please try again later",
         handler: (req,res,next,option)=>{
-            return res.status(option.statusCode).json({message:option.message});
+            return res.status(option.statusCode).json({success: false, message:option.message});
         }
     }
 )
 
 incidentRoute.use(protect);
-incidentRoute.use(incidentLimit);
+
 
 incidentRoute.post("/process",submitIncidentLog);
 incidentRoute.get("/:projectId",getIncidents);
 incidentRoute.get("/:projectId/:incidentId",incidentById);
 incidentRoute.post("/:projectId/search", searchIncidents);
+incidentRoute.put("/:projectId/:incidentId",updateIncident);
+incidentRoute.patch("/:projectId/:incidentId",updateIncident);
 
 
 module.exports = incidentRoute;

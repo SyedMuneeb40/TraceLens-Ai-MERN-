@@ -21,6 +21,10 @@ const getAuditLogs = async (req, res, next) => {
             filter.resourceType = req.query.resourceType;
         }
 
+        if (req.query.userId) {
+            filter.user = req.query.userId;
+        }
+
         const [logs, total] = await Promise.all([
             AuditLog.find(filter)
                 .sort({ createdAt: -1 })

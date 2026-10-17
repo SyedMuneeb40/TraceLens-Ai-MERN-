@@ -1,5 +1,7 @@
 import api from "./Api.js";
 
+let sessionBootstrapPromise = null;
+
 export const loginUserApi = async (credentials)=>{
     const response = await api.post(`/api/auth/login`,credentials);
     return response.data;
@@ -21,9 +23,23 @@ export const registerUserApi = async (credentials)=>{
     return response.data;
 }
 
+export const verifyRegistrationOtpApi = async (details)=>{
+    const response = await api.post(`/api/auth/register/verify`,details);
+    return response.data;
+}
+
 export const meApi = async ()=>{
     const response = await api.get(`/api/auth/me`);
     return response.data;
+}
+
+export const refreshSessionApi = async ()=>{
+    if (!sessionBootstrapPromise) {
+        sessionBootstrapPromise = api.post(`/api/auth/refresh`)
+            .then((response) => response.data);
+    }
+
+    return sessionBootstrapPromise;
 }
 
 

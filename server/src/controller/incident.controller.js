@@ -1,6 +1,8 @@
 const {processIncidentLogs,incidentHistory,getIncidentById} = require("../service/incidentProcessing.service");
 const searchSimilarIncidents = require("../service/incidentSearch.service.js");
 const  createAuditLog  = require("../service/auditLog.service.js");
+const Incident = require("../models/Incident");
+const Project = require("../models/Project");
 
 
 
@@ -210,5 +212,41 @@ const searchIncidents = async (req, res, next) => {
     }
 };
 
+const updateIncident = async (req,res,next)=>{
+    try{
+        const {projectId,incidentId} = req.params;
+        const {status} = req.body;
+        const userId = req.user.id;
+        const allowedStatus = ["open","investigating","resolved","ignored"];
 
-module.exports = {submitIncidentLog,getIncidents,incidentById,searchIncidents};
+        if(!mongoose.Types.ObjectId.isValid(projectId) || !mongoose.Types.ObjectId.isValid(incidentId)){
+            return res.status(400).json({success:false,message:"Project ID or Incident ID is invalid"});
+        }
+
+        if(!allowedStatus.includes(status)){
+            return res.status(400).json({success:false,message:"Status is invalid"});
+        }
+
+        const project = await Project.findOne({_id:projectId,owner:userId});
+        if(!project){
+            return res.status(404).json({success:false,message:"Project not found or you do not have access to it"});
+        }
+
+        const incident = await Incident.findOneAndUpdate(
+            {_id:incidentId,project:projectId},
+            {$set:{status}},
+            {new:true,runValidators:true}
+        ).select("-embedding");
+
+        if(!incident){
+            return res.status(404).json({success:false,message:"Incident not found in this project"});
+        }
+
+        return res.status(200).json({success:true,message:"Incident status updated successfully",incident});
+    }catch(error){
+        next(error);
+    }
+};
+
+
+module.exports = {submitIncidentLog,getIncidents,incidentById,searchIncidents,updateIncident};

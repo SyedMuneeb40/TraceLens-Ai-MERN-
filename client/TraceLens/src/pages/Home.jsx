@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { useSelector } from "react-redux";
+import { Link } from "react-router-dom";
 
 import Activity from 'lucide-react/dist/esm/icons/activity';
 import ArrowDownRight from 'lucide-react/dist/esm/icons/arrow-down-right';
@@ -10,10 +12,17 @@ import BrainCircuit from 'lucide-react/dist/esm/icons/brain-circuit';
 import GitBranch from 'lucide-react/dist/esm/icons/git-branch';
 import Terminal from 'lucide-react/dist/esm/icons/terminal';
 import CheckCircle2 from 'lucide-react/dist/esm/icons/check-circle-2';
+import Quote from 'lucide-react/dist/esm/icons/quote';
+import Star from 'lucide-react/dist/esm/icons/star';
+import Users from 'lucide-react/dist/esm/icons/users';
+import ChevronLeft from 'lucide-react/dist/esm/icons/chevron-left';
+import ChevronRight from 'lucide-react/dist/esm/icons/chevron-right';
 import Menu from 'lucide-react/dist/esm/icons/menu';
 import X from 'lucide-react/dist/esm/icons/x';
 
 import "./Home.css";
+
+const TraceScene = lazy(() => import("../components/landing/TraceScene"));
 
 const features = [
   {
@@ -46,10 +55,84 @@ const workflow = [
   "Generate evidence-backed analysis"
 ];
 
+const proofStats = [
+  { value: "10K+", label: "developers using TraceLens AI" },
+  { value: "98%", label: "less time spent searching logs" },
+  { value: "24/7", label: "incident context on demand" },
+  { value: "1M+", label: "signals ready to investigate" }
+];
+
+const feedback = [
+  {
+    quote:
+      "TraceLens gives our team a starting point we can actually verify. The evidence stays visible while the AI helps us move faster.",
+    name: "Maya Chen",
+    role: "Staff Engineer · Platform"
+  },
+  {
+    quote:
+      "The historical context is the difference between guessing at a recurring incident and understanding the pattern behind it.",
+    name: "Jordan Ellis",
+    role: "Engineering Manager · SaaS"
+  },
+  {
+    quote:
+      "Our incident reviews are clearer now because every hypothesis has a trail back to the logs that inspired it.",
+    name: "Samir Patel",
+    role: "SRE Lead · Infrastructure"
+  },
+  {
+    quote:
+      "The visual trace makes it much easier to explain a production failure to everyone in the room, not just the person who found it.",
+    name: "Avery Morgan",
+    role: "Principal Engineer · Fintech"
+  },
+  {
+    quote:
+      "We spend less time switching between dashboards and more time deciding on the right fix.",
+    name: "Noah Williams",
+    role: "Engineering Lead · Developer Tools"
+  },
+  {
+    quote:
+      "TraceLens turns a wall of logs into a conversation the whole team can follow during an incident.",
+    name: "Leila Hassan",
+    role: "Reliability Engineer · Cloud"
+  }
+];
+
 function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [feedbackPaused, setFeedbackPaused] = useState(false);
+  const feedbackViewportRef = useRef(null);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
+  const startRoute = isAuthenticated ? "/app" : "/login";
+  const startLabel = isAuthenticated ? "Open workspace" : "Log in";
 
   const closeMenu = () => setMenuOpen(false);
+
+  const moveFeedback = useCallback((direction) => {
+    const viewport = feedbackViewportRef.current;
+    const card = viewport?.querySelector(".feedback-card");
+
+    if (!viewport || !card) return;
+
+    const gap = Number.parseFloat(getComputedStyle(card.parentElement).gap) || 17;
+    const step = card.getBoundingClientRect().width + gap;
+    const atEnd = viewport.scrollLeft + viewport.clientWidth >= viewport.scrollWidth - 8;
+
+    viewport.scrollTo({
+      left: direction > 0 && atEnd ? 0 : viewport.scrollLeft + direction * step,
+      behavior: "smooth"
+    });
+  }, []);
+
+  useEffect(() => {
+    if (feedbackPaused) return undefined;
+
+    const interval = window.setInterval(() => moveFeedback(1), 4800);
+    return () => window.clearInterval(interval);
+  }, [feedbackPaused, moveFeedback]);
 
   return (
     <main className="home-page">
@@ -75,10 +158,11 @@ function Home() {
         <div className={`nav-links ${menuOpen ? "nav-open" : ""}`}>
           <a href="#features" onClick={closeMenu}>Features</a>
           <a href="#workflow" onClick={closeMenu}>How it works</a>
+          <a href="#feedback" onClick={closeMenu}>Feedback</a>
           <a href="#about" onClick={closeMenu}>About</a>
-          <a href="#get-started" onClick={closeMenu} className="nav-cta">
-            Get started <ArrowRight size={16} />
-          </a>
+          <Link to={startRoute} onClick={closeMenu} className="nav-cta">
+            {startLabel} <ArrowRight size={16} />
+          </Link>
         </div>
       </nav>
 
@@ -107,9 +191,9 @@ function Home() {
           </p>
 
           <div className="hero-actions" id="get-started">
-            <a href="#workflow" className="button-primary">
-              Explore the workflow <ArrowRight size={18} />
-            </a>
+            <Link to={startRoute} className="button-primary">
+              {isAuthenticated ? "Open your workspace" : "Start investigating"} <ArrowRight size={18} />
+            </Link>
 
             <a href="#features" className="button-secondary">
               Discover features <ArrowDownRight size={18} />
@@ -132,6 +216,9 @@ function Home() {
         >
           <div className="orb orb-one" />
           <div className="orb orb-two" />
+          <Suspense fallback={<div className="scene-fallback">Loading trace intelligence</div>}>
+            <TraceScene />
+          </Suspense>
 
           <div className="preview-card">
             <div className="preview-topbar">
@@ -204,6 +291,21 @@ function Home() {
             Historical context
           </div>
         </motion.div>
+      </section>
+
+      <section className="proof-strip section-container" aria-label="TraceLens AI usage metrics">
+        <div className="proof-intro">
+          <Users size={20} />
+          <span>Trusted by teams that debug in motion</span>
+        </div>
+        <div className="proof-stats">
+          {proofStats.map((stat) => (
+            <div className="proof-stat" key={stat.value}>
+              <strong>{stat.value}</strong>
+              <span>{stat.label}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="feature-section section-container" id="features">
@@ -282,6 +384,76 @@ function Home() {
                 )}
               </motion.div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="feedback-section section-container" id="feedback">
+        <div className="section-heading feedback-heading">
+          <span className="eyebrow">FEEDBACK FROM THE DEBUGGING LOOP</span>
+          <h2>
+            Built for the moments when <span className="gradient-text">context matters.</span>
+          </h2>
+          <p>
+            A calmer way to move from the first alert to a shared understanding
+            of what happened and why.
+          </p>
+        </div>
+
+        <div
+          className="feedback-carousel"
+          onMouseEnter={() => setFeedbackPaused(true)}
+          onMouseLeave={() => setFeedbackPaused(false)}
+          onFocus={() => setFeedbackPaused(true)}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setFeedbackPaused(false);
+            }
+          }}
+        >
+          <div
+            className="feedback-viewport"
+            ref={feedbackViewportRef}
+            aria-label="TraceLens AI feedback"
+          >
+            <div className="feedback-grid">
+          {feedback.map((item, index) => (
+            <motion.article
+              className="feedback-card"
+              key={item.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.45, delay: index * 0.1 }}
+              whileHover={{ y: -6, rotateX: 2, rotateY: index % 2 ? -2 : 2 }}
+            >
+              <div className="feedback-card-top">
+                <Quote size={22} />
+                <div className="feedback-stars" aria-label="5 out of 5 stars">
+                  {Array.from({ length: 5 }, (_, starIndex) => (
+                    <Star key={starIndex} size={13} fill="currentColor" />
+                  ))}
+                </div>
+              </div>
+              <blockquote>“{item.quote}”</blockquote>
+              <div className="feedback-author">
+                <span className="feedback-avatar">{item.name.charAt(0)}</span>
+                <span>
+                  <strong>{item.name}</strong>
+                  <small>{item.role}</small>
+                </span>
+              </div>
+            </motion.article>
+          ))}
+            </div>
+          </div>
+          <div className="feedback-controls" aria-label="Feedback carousel controls">
+            <button type="button" onClick={() => moveFeedback(-1)} aria-label="Show previous feedback">
+              <ChevronLeft size={18} />
+            </button>
+            <button type="button" onClick={() => moveFeedback(1)} aria-label="Show next feedback">
+              <ChevronRight size={18} />
+            </button>
           </div>
         </div>
       </section>

@@ -280,7 +280,7 @@ const incidentHistory = async (projectId,userId)=>{
     {
       project: projectId
     }
-  ).sort({lastSeenAt: -1});
+  ).select("-embedding").sort({lastSeenAt: -1});
 
   return incidents;
 
@@ -309,7 +309,7 @@ const getIncidentById = async (projectId,incidentId,userId)=>{
   const incident = await Incident.findOne({
         _id: incidentId,
         project: projectId
-  });
+  }).select("-embedding");
 
   if (!incident) {
         createError("Incident not found in this project.", 404);

@@ -16,6 +16,16 @@ export const getIncidentApi = async (projectId,incidentId)=>{
     return response.data;
 }
 
+export const updateIncidentPutApi = async (projectId,incidentId,status)=>{
+    const response = await api.put(`/api/incidents/${projectId}/${incidentId}`,{status});
+    return response.data;
+}
+
+export const updateIncidentPatchApi = async (projectId,incidentId,status)=>{
+    const response = await api.patch(`/api/incidents/${projectId}/${incidentId}`,{status});
+    return response.data;
+}
+
 
 
 export const searchIncidentApi = async (projectId,query,limit = 5)=>{

@@ -26,6 +26,10 @@ const sessionSchema = new mongoose.Schema(
         revoked:{
             type: Boolean,
             default: false
+        },
+        expiresAt: {
+            type: Date,
+            default: () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
         }
 
     },
@@ -35,6 +39,7 @@ const sessionSchema = new mongoose.Schema(
 );
 
 sessionSchema.index({user:1,revoked:1});
+sessionSchema.index({expiresAt: 1},{expireAfterSeconds: 0});
 
 const Session = mongoose.model("Session",sessionSchema);
 

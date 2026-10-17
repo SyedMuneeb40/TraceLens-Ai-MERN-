@@ -36,12 +36,20 @@ api.interceptors.response.use(
 
         const orignalRequest = error.config;
 
-        if(error.response && error.response.status === 401 && orignalRequest && !orignalRequest._retry && !orignalRequest.url.includes(`/auth/login`) && !orignalRequest.url.includes("/auth/refresh")){
+        if (error.response?.data?.message) {
+            error.apiMessage = error.response.data.message;
+        }
+
+        const requestUrl = orignalRequest?.url || "";
+        const isAuthEndpoint = ["/auth/login", "/auth/register", "/auth/refresh"]
+            .some((endpoint) => requestUrl.includes(endpoint));
+
+        if(error.response?.status === 401 && orignalRequest && !orignalRequest._retry && !isAuthEndpoint){
 
             orignalRequest._retry = true;
             try{
                 if(!refreshTokenPromise){
-                    refreshTokenPromise = axios.get(`${import.meta.env.VITE_API_URL}/api/auth/refresh`,{withCredentials:true})
+                    refreshTokenPromise = axios.post(`${import.meta.env.VITE_API_URL}/api/auth/refresh`,null,{withCredentials:true})
                     .finally(()=> refreshTokenPromise = null);
                 }
 

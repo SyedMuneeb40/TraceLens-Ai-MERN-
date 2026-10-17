@@ -17,8 +17,8 @@ const analysisSchema = new mongoose.Schema(
         runtime:
         {
             type:String,
-            enum: ["ollama","huggingface-zerogpu"],
-            default: "ollama"
+            enum: ["ollama","huggingface-zerogpu","openrouter"],
+            default: "openrouter"
         },
         promptVersion:
         {

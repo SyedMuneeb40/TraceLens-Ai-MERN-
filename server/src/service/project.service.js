@@ -1,4 +1,6 @@
 const Project = require("../models/Project.js");
+const Incident = require("../models/Incident.js");
+const Analysis = require("../models/Analysis.js");
 const mongoose = require("mongoose");
 
 const createError = (message,statusCode = 400)=>{
@@ -47,8 +49,8 @@ const create = async (user_id,data)=>{
     const description = data.description?.trim() ?? "";
     const environment = data.environment?.trim() ?? "development";
 
-    if(!name || name.length < 2 || name.length > 300){
-        throw createError("Project name must be between 2 and 300 characters.")
+    if(!name || name.length < 2 || name.length > 100){
+        throw createError("Project name must be between 2 and 100 characters.")
     }
 
     if(typeof description !== "string" || description.length > 500){
@@ -118,8 +120,8 @@ const updateProject = async (user_id,project_id,data)=>{
 
         const name = data.name.trim();
 
-        if (name.length < 2 || name.length > 300) {
-            throw createError("Project name must be between 2 and 300 characters.");
+        if (name.length < 2 || name.length > 100) {
+            throw createError("Project name must be between 2 and 100 characters.");
         }
 
         updatedData.name = name;
@@ -182,14 +184,32 @@ const deleteProject = async (user_id,project_id)=>{
     isIdValid(user_id);
     isIdValid(project_id);
 
-    const deletedProject = await Project.findOneAndDelete(
-        {
-            _id: project_id,
-            owner: user_id
-        }
-    );
+    const project = await Project.findOne({
+        _id: project_id,
+        owner: user_id
+    }).select("_id");
 
-    if(!deletedProject){
+    if(!project){
+        throw createError("Project not found.", 404);
+    }
+
+    // Project deletion removes owned incidents and analyses while retaining audit logs.
+    const incidentIds = await Incident.distinct("_id", {
+        project: project_id
+    });
+
+    if (incidentIds.length > 0) {
+        await Analysis.deleteMany({ incident: { $in: incidentIds } });
+    }
+
+    await Incident.deleteMany({ project: project_id });
+
+    const deletedProject = await Project.findOneAndDelete({
+        _id: project_id,
+        owner: user_id
+    });
+
+    if (!deletedProject) {
         throw createError("Project not found.", 404);
     }
 

@@ -1,4 +1,23 @@
-/* src/index.css ya App.css mein yeh sab replace kar dein */
+:root {
+  --theme-bg: #050505;
+  --theme-surface: #10100d;
+  --theme-surface-raised: #1a180d;
+  --theme-border: rgba(250, 204, 21, 0.2);
+  --theme-text: #fffdf2;
+  --theme-muted: #aaa58f;
+  --theme-primary: #facc15;
+  --theme-secondary: #ffe477;
+  --theme-accent: #f59e0b;
+  --theme-success: #fef08a;
+  --theme-focus: #fde047;
+  font-family: "DM Sans", sans-serif;
+  color: var(--theme-text);
+  background: var(--theme-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 
 * {
   margin: 0;
@@ -13,6 +32,31 @@ body,
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  background-color: #0b0f17; /* Aapki page ka dark background color */
+  background-color: var(--theme-bg);
   overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--theme-focus);
+  outline-offset: 4px;
+}
+
+::selection {
+  color: var(--theme-bg);
+  background: var(--theme-secondary);
 }

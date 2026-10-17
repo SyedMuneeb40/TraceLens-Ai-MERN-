@@ -1,7 +1,8 @@
 
 const express = require("express");
 
-const {createIncidentAnalysis,listIncidentAnalyses,readAnalysisById} = require("../controller/analysis.controller");const { protect } = require("../middlewares/authMiddleware");
+const {createIncidentAnalysis,listIncidentAnalyses,readAnalysisById} = require("../controller/analysis.controller");
+const { protect } = require("../middlewares/authMiddleware");
 
 const analysisRouter = express.Router();
 

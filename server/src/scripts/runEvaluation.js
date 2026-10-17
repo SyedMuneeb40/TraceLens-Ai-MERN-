@@ -1,10 +1,11 @@
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({ path: path.resolve(__dirname, "../.env") });
 
 const mongoose = require("mongoose");
 const dbConnect = require("../config/databaseConfig.js");
 const EvaluationRun = require("../models/EvaluationRun.js");
 const evaluationDataset = require("../evaluation/incidentDataset.js");
-const analyzeWithOllama = require("../service/ollama.service.js");
+const analyzeWithOpenRouter = require("../service/ai.service.js");
 
 const normalize = (value) =>
     value
@@ -41,7 +42,10 @@ const runEvaluation = async () => {
             console.log(`Evaluating ${testCase.caseId}...`);
 
             try {
-                const aiResult = await analyzeWithOllama(testCase.logs);
+                const aiResult = await analyzeWithOpenRouter({
+                    currentEvidence: testCase.logs,
+                    historicalContext: []
+                });
 
                 const predictedCause =
                     typeof aiResult.hypotheses?.[0]?.cause === "string"
@@ -166,9 +170,9 @@ const runEvaluation = async () => {
             : 0;
 
         const evaluationRun = await EvaluationRun.create({
-            name: "Qwen3 Baseline Evaluation",
-            modelName: process.env.OLLAMA_MODEL || "qwen3:8b",
-            datasetVersion: "v1",
+            name: "OpenRouter Models Baseline Evaluation",
+            modelName: process.env.OPENROUTER_MODEL|| "poolside/laguna-s-2.1",
+            datasetVersion: "v2",
             totalCases,
             correctRootCauseCount,
             evidenceGroundedCount,

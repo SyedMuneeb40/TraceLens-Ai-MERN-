@@ -1,6 +1,23 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto")
 
+const refreshTokenMaxAge = 2 * 24 * 60 * 60 * 1000;
+
+const cookieOptions = {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/api/auth",
+    maxAge: refreshTokenMaxAge
+};
+
+const clearCookieOptions = {
+    httpOnly: cookieOptions.httpOnly,
+    sameSite: cookieOptions.sameSite,
+    secure: cookieOptions.secure,
+    path: cookieOptions.path
+};
+
 const generateAccessToken = (user) => {
     const accessToken = jwt.sign(
         {
@@ -36,14 +53,11 @@ function hashToken(token){
 }
 
 
-const cookieOptions = {
-    HttpOnly: true,
-    sameSite: 'lax',
-    secure: true,
-    path: '/api/auth',
-    maxAge: 3600000
-}
-
-
-module.exports = {generateAccessToken,generateRefreshToken,hashToken,cookieOptions};
+module.exports = {
+    generateAccessToken,
+    generateRefreshToken,
+    hashToken,
+    cookieOptions,
+    clearCookieOptions
+};
 

@@ -4,6 +4,6 @@ const { protect, authorize } = require("../middlewares/authMiddleware");
 
 const auditLogRoute = express.Router();
 
-auditLogRoute.get("/", protect, authorize("user"), getAuditLogs);
+auditLogRoute.get("/", protect, authorize("admin"), getAuditLogs);
 
 module.exports = auditLogRoute;
