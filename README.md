@@ -21,6 +21,22 @@
 
 </div>
 
+> ## ⚠️ Free-Tier Notice (Please Read)
+>
+> TraceLens AI is built entirely on **free-tier services** (free LLM models on OpenRouter, free Gemini embeddings, and free hosting). Free tiers share capacity with many users, so the live demo can occasionally be slow or temporarily unavailable. **This is a limitation of the free infrastructure, not of the application.**
+>
+> **What you might see:**
+> - `502` / `429` / "busy" / rate-limit errors when clicking **Generate Analysis**
+> - **Log processing** failing or taking longer than usual
+> - The first request after inactivity being slow (free hosting sleeps when idle)
+>
+> **What to do:** the failed request does not complete in the background. Please wait 1-2 minutes and click the button again. At busy times it may take 2-3 attempts.
+>
+> **Please don't judge the project by these errors.** The analysis pipeline is carefully engineered: prompts are designed to ground every conclusion in the actual log evidence (error lines, endpoints, timestamps, repeated failures), and sensitive data is redacted before anything reaches the model. When the free provider is available, the output is detailed and accurate. The pipeline has also been tested locally with **Ollama (Qwen)**, where it runs reliably without shared rate limits.
+>
+> For stable production use, simply switch to a paid API key or a self-hosted model.
+
+
 ---
 
 ## ⚡ TL;DR (30 seconds)
